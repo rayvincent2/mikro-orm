@@ -42,14 +42,28 @@ export class EntityHelper {
    * defines magic id property getter/setter if PK property is `_id` and there is no `id` property defined
    */
   private static defineIdProperty<T extends AnyEntity<T>>(meta: EntityMetadata<T>, platform: Platform): void {
-    Object.defineProperty(meta.prototype, 'id', {
-      get(): string | null {
-        return this._id ? platform.normalizePrimaryKey<string>(this._id) : null;
-      },
-      set(id: string): void {
-        this._id = id ? platform.denormalizePrimaryKey(id) : null;
-      },
-    });
+    // eslint-disable-next-line dot-notation
+    if (meta.properties[meta.serializedPrimaryKey] === undefined || meta.properties['_id'].type !== meta.properties[meta.serializedPrimaryKey].type) {
+      // Use the normalize/denormalize functions if the types are not the same
+      Object.defineProperty(meta.prototype, 'id', {
+        get(): string | null {
+          return this._id ? platform.normalizePrimaryKey<string>(this._id) : null;
+        },
+        set(id: string): void {
+          this._id = id ? platform.denormalizePrimaryKey(id) : null;
+        },
+      });
+    } else {
+      // If the primary key and serializedKey types are the same then don't normalize/denormalize
+      Object.defineProperty(meta.prototype, 'id', {
+        get(): string | null {
+          return this._id ? this._id : null;
+        },
+        set(id: string): void {
+          this._id = id ? id : null;
+        },
+      });
+    }
   }
 
   /**
